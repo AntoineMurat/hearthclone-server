@@ -1,4 +1,4 @@
-const CardTypes = require('./../enum/CardTypes.js')
+const CardTypes = require('./../enums/cardTypes')
 
 class Hand{
 	constructor(player){
@@ -8,6 +8,8 @@ class Hand{
 
 	drawCard(){
 		const drawnCard = this.player.library.pop()
+		if (drawnCard === false)
+			return
 		if (this.cards.length == 10)
 			return this.player.graveyard.add(drawnCard)
 		this.cards.push(drawnCard)
@@ -27,3 +29,5 @@ class Hand{
 		this.player.playCard(cardToPlay, data)
 	}
 }
+
+module.exports = Hand

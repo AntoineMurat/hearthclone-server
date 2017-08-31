@@ -86,3 +86,5 @@ const Cards = {
 		goldImage: 'n/a'
 	}
 }
+
+module.exports = Cards

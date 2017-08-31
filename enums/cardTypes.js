@@ -1,4 +1,4 @@
-const cardTypes = {
+const CardTypes = {
 	HERO: 'Hero',
 	MINION: 'Minion',
 	SPELL: 'Spell',
@@ -7,4 +7,4 @@ const cardTypes = {
 	HERO_POWER: 'Hero Power'
 }
 
-module.exports = cardTypes
+module.exports = CardTypes

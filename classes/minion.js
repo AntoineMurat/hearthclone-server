@@ -42,7 +42,8 @@ class Minion {
 	dealDamages(damages){
 		if (this.card.immune)
 			throw new Error('Target immune.')
-		if (this.card.)
+		if (this.card.divineShield)
+			return this.card.divineShield = false
 		this.health -= damages
 		if (this.health > 0)
 			return

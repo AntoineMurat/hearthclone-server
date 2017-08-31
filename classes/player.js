@@ -2,15 +2,18 @@ const Battlefield = require('./battlefield')
 const Hand = require('./hand')
 const Library = require('./library')
 const Graveyard = require('./graveyard')
+const Secrets = require('./secrets')
 
+const Classes = require('./../enums/classes')
 const Cards = require('./../enums/cards')
 
 class Player {
 
-	constructor(game, client, deck = Array(20).fill(), class = 0, startingHp = 30, totalMana = 0){
+	constructor(game, client, deck = Array(20).fill(), playerClass = Classes.MAGE, startingHp = 30, totalMana = 0){
 
 		this.game = game
 		this.client = client
+		this.class = playerClass
 
 		deck = deck.map(e => Object.assign({},Cards.TOKEN)) 
 		this.deck = deck
@@ -65,6 +68,38 @@ class Player {
 
 	}
 
+	play(data){
+		if (!this.isHisTurn)
+			throw new Error('Not your turn.')
+		if (typeof data.action === 'undefined')
+			throw new Error('No action specified.')
+		switch (data.action){
+			case 'endTurn':
+				this.endTurn()
+				break
+			case 'playCard':
+				this.playCard(data.index, data)
+				break
+			case 'useHeroPower':
+				this.useHeroPower(data)
+				break
+			case 'useWeapon':
+				this.useWeapon(data)
+				break
+			case 'attackWithMinion':
+				if (data.on !== 'hero' || data.on !== 'minion')
+					throw new Error('On should be either "hero" or "minion".')
+				if (data.on === 'hero')
+					target = this.game.opponentOf(this)
+				else 
+					target = this.game.opponentOf(this).battlefield.getMinionById(data.index)
+				this.battlefield.getMinionById(data.with).attack(target)
+				break
+			default:
+				throw new Error('Unknow action.')
+		}
+	}
+
 	canBeAttacked(){
 		return !this.immune && !this.battlefield.minions.some(minion => minion.taunt)
 	}
@@ -78,9 +113,16 @@ class Player {
 		damages = -shield
 		shield = 0
 		this.hp -= damages
+		this.game.eventEmitter.emit('wasDealtDaamges', {target: this, damages: damages})
 		if (this.hp > 0)
 			return
 		this.game.won(this.game.opponentOf(this))
+	}
+
+	heal(hp){
+		const oldHp = this.hp
+		this.hp = min(this.startingHp, this.hp+hp)
+		this.game.eventEmitter.emit('wasHealed', {target: this, damages: this.hp - this.oldHp})
 	}
 
 	playCard(index, data = {}){
@@ -94,11 +136,17 @@ class Player {
 		return this.playCard(this.heroPower, data)
 	}
 
-	useWeapon(target){
+	useWeapon(data){
 		if (this.weapon === null)
 			throw new Error('No weapon equiped.')
 		if (this.weaponAlreadyUsed)
 			throw new Error('Weapon already used.')
+		if (data.on !== 'hero' || data.on !== 'minion')
+			throw new Error('On should be either "hero" or "minion".')
+		if (data.on === 'hero')
+			target = this.game.opponentOf(this)
+		else 
+			target = this.game.opponentOf(this).battlefield.getMinionById(data.index)
 		if (!this.target.canBeAttacked)
 			throw new Error('The target can\'t be attacked.')
 		this.weaponAlreadyUsed = true
@@ -178,4 +226,4 @@ class Player {
 
 }
 
-module.exports = Game
+module.exports = Player

@@ -29,3 +29,5 @@ class Battlefield{
 		return this.minions[n]
 	}
 }
+
+module.exports = Battlefield

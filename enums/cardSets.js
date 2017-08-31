@@ -9,4 +9,4 @@ const CardSets = {
 	BLACKROCK_MOUNTAIN: 'Blackrock Mountain'
 }
 
-module.exports = cardSets
+module.exports = CardSets

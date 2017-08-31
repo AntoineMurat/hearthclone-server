@@ -1,4 +1,5 @@
-const Client = require('Client')
+const Client = require('./client')
+const Game = require('./game')
 
 class Server{
 
@@ -20,10 +21,10 @@ class Server{
 
 				game.eventEmitter.on('won', data => {
 
-					this.games.slpice(this.games.indexOf(game), 1)
+					this.games.splice(this.games.indexOf(game), 1)
 
-					this.inGameClients.slpice(this.inGameClients.indexOf(client1), 1)
-					this.inGameClients.slpice(this.inGameClients.indexOf(client2), 1)
+					this.inGameClients.splice(this.inGameClients.indexOf(client1), 1)
+					this.inGameClients.splice(this.inGameClients.indexOf(client2), 1)
 
 					if (client1.socket.connected)
 						this.inMatchMakingCLients.push(client1)
@@ -34,31 +35,38 @@ class Server{
 
 			}
 
+			console.log(`${this.inMatchMakingCLients.length} clients waiting in matchmaking.`)
+
 		}, 500)
 	}
 
 	newClient(socket){
 		if (this.inGameClients.length + this.inMatchMakingCLients.length < this.maxNbrCLients){
 
-			this.inMatchMakingCLients.push(new Client(socket))
+			const client = new Client(socket)
+
+			console.log(`New client: ${socket.id}`)
+
+			this.inMatchMakingCLients.push(client)
 
 			client.socket.on('disconnect', _ => {
 
 				// If he was in matchmaking :
 
 				if (this.inMatchMakingCLients.includes(client))
-					return this.inMatchMakingCLients.slpice(this.inMatchMakingCLients.indexOf(client), 1)
+					return this.inMatchMakingCLients.splice(this.inMatchMakingCLients.indexOf(client), 1)
 
 				// Then he is in-game.
 				// We just have to find the game and make his opponent win to end the process normally.
 			
 				for (let game of this.games){
+
 					if (game.client1 == client){
-						game.won(client2)
+						game.won(game.player2)
 						break
 					}
 					if (game.client2 == client){
-						game.won(client1)
+						game.won(game.player1)
 					}
 				}
 

@@ -11,9 +11,7 @@ class Secrets {
 
 	add(secret){
 		this.secrets.push(secret)
-		// Add listener.
-		const eventsToListenTo = ['none']
-		
+
 		const onEvent = data => {
 
 			if (!this.secret.secretConditions(data))
@@ -23,13 +21,11 @@ class Secrets {
 			this.player.act(effect, data)
 			this.player.graveyard.add(secret)
 
-			for event of eventsToListenTo
-				this.player.game.eventEmitter.removeListener(event, onEvent)
+			this.player.game.eventEmitter.removeListener(secret.secretEvent, onEvent)
 
 		}
 
-		for event of eventsToListenTo
-			this.player.game.eventEmitter.on(event, onEvent)
+		this.player.game.eventEmitter.on(secret.secretEvent, onEvent)
 
 	}
 }
