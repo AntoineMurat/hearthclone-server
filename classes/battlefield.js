@@ -1,13 +1,15 @@
+const Minion = require('./minion')
+
 class Battlefield{
 	constructor(player){
 		this.player = player
 		this.minions = []
 	}
 
-	newMinion(minion){
+	newMinion(player, minion){
 		if (this.minions.length > 6)
 			throw new Error('Battlefield already full.')
-		this.minions.push(minion)
+		this.minions.push(new Minion(player, minion))
 	}
 
 	removeMinion(minion){
@@ -27,6 +29,10 @@ class Battlefield{
 		if (typeof this.minions[n] === 'undefined')
 			throw new Error('Index out of range.')
 		return this.minions[n]
+	}
+
+	status(){
+		return this.minions.map(minion => minion.status()).join('\n////////////\n')
 	}
 }
 

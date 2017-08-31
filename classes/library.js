@@ -10,7 +10,7 @@ class Library {
 		if (this.cards.length > 0)
 			return this.cards.pop()
 		
-		this.player.dealtDamages(++this.dealtDamages)
+		this.player.dealDamages(++this.dealtDamages)
 		return false
 	}
 }

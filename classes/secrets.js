@@ -28,6 +28,10 @@ class Secrets {
 		this.player.game.eventEmitter.on(secret.secretEvent, onEvent)
 
 	}
+
+	status(){
+		return this.secrets.map(secret => secret.cardName).join('\n')
+	}
 }
 
 module.exports = Secrets

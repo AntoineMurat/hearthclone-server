@@ -6,10 +6,11 @@ const Secrets = require('./secrets')
 
 const Classes = require('./../enums/classes')
 const Cards = require('./../enums/cards')
+const CardTypes = require('./../enums/cardTypes')
 
 class Player {
 
-	constructor(game, client, deck = Array(20).fill(), playerClass = Classes.MAGE, startingHp = 30, totalMana = 0){
+	constructor(game, client, deck = Array(20).fill(), playerClass = Classes.MAGE, startingHealth = 30, totalMana = 0){
 
 		this.game = game
 		this.client = client
@@ -24,8 +25,8 @@ class Player {
 		this.graveyard = new Graveyard(this)
 		this.secrets = new Secrets(this)
 
-		this.startingHp = startingHp
-		this.hp = startingHp
+		this.startingHealth = startingHealth
+		this.health = startingHealth
 		this.shield = 0
 		this.immune = false
 
@@ -45,6 +46,8 @@ class Player {
 	}
 
 	newTurn(){
+		this.game.eventEmitter.emit('newTurn', {player: this})
+
 		this.hand.drawCard()
 		this.weaponAlreadyUsed = this.heroPowerAlreadyUsed = false
 		this.totalMana = Math.min(this.totalMana+1, 10)
@@ -54,8 +57,6 @@ class Player {
 		this.battlefield.minions.forEach(minion => minion.reset())
 
 		this.isHisTurn = true
-		this.game.eventEmitter.emit('newTurn', {player: this})
-
 		this.automaticEndOfTurn = setTimeout(_ => this.endTurn(), 75000)
 	}
 
@@ -78,7 +79,7 @@ class Player {
 				this.endTurn()
 				break
 			case 'playCard':
-				this.playCard(data.index, data)
+				this.playCardByIndex(data.index, data)
 				break
 			case 'useHeroPower':
 				this.useHeroPower(data)
@@ -87,13 +88,14 @@ class Player {
 				this.useWeapon(data)
 				break
 			case 'attackWithMinion':
-				if (data.on !== 'hero' || data.on !== 'minion')
+				if (data.on !== 'hero' && data.on !== 'minion')
 					throw new Error('On should be either "hero" or "minion".')
+				let target = null
 				if (data.on === 'hero')
 					target = this.game.opponentOf(this)
 				else 
-					target = this.game.opponentOf(this).battlefield.getMinionById(data.index)
-				this.battlefield.getMinionById(data.with).attack(target)
+					target = this.game.opponentOf(this).battlefield.getMinionByIndex(data.index)
+				this.battlefield.getMinionByIndex(data.with).attack(target)
 				break
 			default:
 				throw new Error('Unknow action.')
@@ -108,24 +110,25 @@ class Player {
 		if (this.immune)
 			throw new Error('Target is immune')
 		this.shield -= damages
-		if (shield > 0)
+		if (this.shield > 0)
 			return
-		damages = -shield
-		shield = 0
-		this.hp -= damages
-		this.game.eventEmitter.emit('wasDealtDaamges', {target: this, damages: damages})
-		if (this.hp > 0)
+		damages = -this.shield
+		this.shield = 0
+		this.health -= damages
+		this.game.eventEmitter.emit('wasDealtDamages', {target: this, damages: damages})
+		if (this.health > 0)
 			return
 		this.game.won(this.game.opponentOf(this))
 	}
 
 	heal(hp){
-		const oldHp = this.hp
-		this.hp = min(this.startingHp, this.hp+hp)
-		this.game.eventEmitter.emit('wasHealed', {target: this, damages: this.hp - this.oldHp})
+		const oldHealth = this.health
+		this.health = min(this.startingHealth, this.health+hp)
+		if (this.health - this.oldHealth)
+			this.game.eventEmitter.emit('wasHealed', {target: this, damages: this.health - this.oldHealth})
 	}
 
-	playCard(index, data = {}){
+	playCardByIndex(index, data = {}){
 		return this.hand.playCardByIndex(index, data)
 	}
 
@@ -163,28 +166,29 @@ class Player {
 		if (this.availableMana - card.cost < 0)
 			throw new Error('Not enough mana.')
 
-		// Could be exploited if error thrown afterwards.
+		this.game.eventEmitter.emit('played', {player: this, card: card})
+
+		if (card.cardType === CardTypes.MINION)
+			this.playMinion(card, data)
+
+		else if (card.cardType === CardTypes.SPELL)
+			this.playSpell(card, data)
+
+		else if (card.cardType === CardTypes.ENCHANTMENT)
+			this.playEnchantment(card, data)
+
+		else if (card.cardType === CardTypes.WEAPON)
+			this.playWeapon(card)
+
+		else if (card.cardType === CardTypes.HERO_POWER)
+			this.playHeroPower(card, data)
+
 		this.availableMana -= card.cost
-
-		if (cardToPlay.cardType === CardTypes.MINION)
-			return this.playMinion(card, data)
-
-		if (cardToPlay.cardType === CardTypes.SPELL)
-			return this.playSpell(card, data)
-
-		if (cardToPlay.cardType === CardTypes.ENCHANTMENT)
-			return this.playEnchantment(card, data)
-
-		if (cardToPlay.cardType === CardTypes.WEAPON)
-			return this.playWeapon(card)
-
-		if (cardToPlay.cardType === CardTypes.HERO_POWER)
-			return this.playHeroPower(card, data)
 	}
 
 	playMinion(minion, data = {}){
-		if (battlefield.minions.length>=7)
-			throw new Error('Battlefield full')
+		if (this.battlefield.minions.length>=7)
+			throw new Error('Battlefield full.')
 		if (minion.battlecry){
 			const battlecry = minion.battlecry
 			battlecry(data)
@@ -223,6 +227,25 @@ class Player {
 		effect(data)
 	}
 
+	get id(){
+		return this.client.socket.id
+	}
+
+	status(){
+		return `// ${this.id} - ${this.health}/${this.startingHealth} (+${this.shield} Shield) //\n`+
+		`// His turn? ${this.isHisTurn} //\n`+
+		`// Mana: ${this.availableMana}/${this.totalMana} (${this.overload} Overload) //\n`+
+		`// Weapon: ${this.weapon === null ? '/' : (this.weapon.cardName + ' ' +this.weapon.attack+'/'+this.weapon.durability+' Already Used '+this.weaponAlreadyUsed)} //\n`+
+		`// immune: ${this.immune} //\n`+
+		`////////////// SECRETS ///////////////\n`+
+		this.secrets.status()+'\n'+
+		`// Library: ${this.library.cards.length}\n`+
+		`// Graveyard: ${this.graveyard.cards.length}\n`+
+		`/////////////// HAND //////////////////////\n`+
+		this.hand.status()+'\n'+
+		`/////////////// BATTLEFIELD ///////////////////////\n`+
+		this.battlefield.status()+'\n'
+	}
 
 }
 

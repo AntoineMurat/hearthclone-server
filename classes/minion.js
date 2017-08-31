@@ -36,7 +36,11 @@ class Minion {
 	}
 
 	heal(hp){
-		this.card.health = Math.min(this.card.health, this.card.totalHealth)
+		const oldHealth = this.card.health
+		this.card.health = Math.min(this.card.health+hp, this.card.totalHealth)
+
+		if (this.card.health - oldHealth)
+			this.player.game.eventEmitter.emit('wasHealed', {target: this, hp: this.card.health - oldHealth})
 	}
 
 	dealDamages(damages){
@@ -45,6 +49,7 @@ class Minion {
 		if (this.card.divineShield)
 			return this.card.divineShield = false
 		this.health -= damages
+		this.player.game.eventEmitter.emit('wasDealtDamages', {target: this, damages: damages})
 		if (this.health > 0)
 			return
 		this.destroy()
@@ -52,7 +57,7 @@ class Minion {
 
 	attack(target){
 		if (this.canAttack == 0)
-			throw new Error('Can\t attack yet/anymore')
+			throw new Error('Can\'t attack yet/anymore')
 		if (!target.canBeAttacked())
 			throw new Error('Target can\'t be attacked.')
 		this.target.dealDamages(this.attack)
@@ -73,6 +78,13 @@ class Minion {
 		enchantment.effect(this)
 	}
 
+	get id(){
+		return this.card.cardName
+	}
+
+	status(){
+		return `${this.card.cardName} - ${this.card.attack}/${this.card.health}\n`+this.enchantments.map(enchantment => enchantment.cardName).join('\n')+'////////\n'
+	}
 
 }
 

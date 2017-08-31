@@ -12,11 +12,12 @@ class Hand{
 			return
 		if (this.cards.length == 10)
 			return this.player.graveyard.add(drawnCard)
+		this.player.game.eventEmitter.emit('drew', {player: this.player, card: drawnCard})
 		this.cards.push(drawnCard)
 	}
 
 	drawCards(n){
-		for (let i = n; i>0; i--)
+		for (let i = 0; i<n; i++)
 			this.drawCard()
 	}
 
@@ -27,6 +28,10 @@ class Hand{
 		this.cards.splice(index, 1)
 
 		this.player.playCard(cardToPlay, data)
+	}
+
+	status(){
+		return this.cards.map(card => card.cardName).join('\n')
 	}
 }
 

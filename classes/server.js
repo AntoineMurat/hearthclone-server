@@ -34,8 +34,8 @@ class Server{
 				})
 
 			}
-
-			console.log(`${this.inMatchMakingCLients.length} clients waiting in matchmaking.`)
+			if (this.inMatchMakingCLients.length)
+				console.log(`${this.inMatchMakingCLients.length} clients waiting in matchmaking.`)
 
 		}, 500)
 	}
@@ -70,6 +70,16 @@ class Server{
 					}
 				}
 
+			})
+
+			client.socket.on('watch', data => {
+
+				const game = this.games.find(g => g.id === data.game)
+
+				if (game)
+					console.log(game.status())
+				else 
+					console.log(`Couldn\'t find game ${data.game}`)
 			})
 
 
