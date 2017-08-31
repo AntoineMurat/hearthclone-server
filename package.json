@@ -1,0 +1,22 @@
+{
+  "name": "hearthclone-server",
+  "version": "0.0.1",
+  "description": "NodeJS Hearthstone-like game engine.",
+  "main": "hearthclone-server.js",
+  "scripts": {
+    "test": "node hearthclone-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Evoliofly/hearthclone-server.git"
+  },
+  "author": "Evoliofly",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Evoliofly/hearthclone-server/issues"
+  },
+  "homepage": "https://github.com/Evoliofly/hearthclone-server#readme",
+  "dependencies": {
+    "socket.io": "^2.0.3"
+  }
+}
