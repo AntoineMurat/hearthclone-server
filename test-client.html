@@ -13,5 +13,30 @@ return new(e[["Active"].concat("Object").join("X")])("Microsoft.XMLHTTP")}catch(
 		const socket = io('http://localhost:3000')
 		socket.on('connect', _ => console.log('Connected'))
 	</script>
+
+	<button id="watch">Watch</button><br>
+	<button id="playCard">Play card</button><br>
+	<button id="attackMinion">Attack Minion</button><br>
+	<button id="attackHero">Attack Hero</button><br>
+	<button id="endTurn">End Turn</button>
+
+	<script>
+		document.getElementById('watch').addEventListener('click', _ => {
+			socket.emit('watch')
+		})
+		document.getElementById('playCard').addEventListener('click', _ => {
+			socket.emit('play', {action: 'playCard', index: 0}, data => console.log(data.success ? 'Success.' : data.error))
+		})
+		document.getElementById('attackMinion').addEventListener('click', _ => {
+			socket.emit('play', {action: 'attackWithMinion', on: 'minion', index: 0, with: 0}, data => console.log(data.success ? 'Success.' : data.error))
+		})
+		document.getElementById('attackHero').addEventListener('click', _ => {
+			socket.emit('play', {action: 'attackWithMinion', on: 'hero', with: 0},
+				data => console.log(data.success ? 'Success.' : data.error))
+		})
+		document.getElementById('endTurn').addEventListener('click', _ => {
+			socket.emit('play', {action: 'endTurn'}, data => console.log(data.success ? 'Success.' : data.error))
+		})
+	</script>
 </body>
 </html>

@@ -67,6 +67,7 @@ class Server{
 					}
 					if (game.client2 == client){
 						game.won(game.player1)
+						break
 					}
 				}
 
@@ -74,14 +75,18 @@ class Server{
 
 			client.socket.on('watch', data => {
 
-				const game = this.games.find(g => g.id === data.game)
+				let game
+
+				if (!data || !data.game)
+					game = this.games.find(g => g.client1 === client || g.client2 === client)
+				else
+					game = this.games.find(g => g.id === data.game)
 
 				if (game)
 					console.log(game.status())
 				else 
 					console.log(`Couldn\'t find game ${data.game}`)
 			})
-
 
 		} else {
 

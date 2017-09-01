@@ -6,10 +6,34 @@ class Battlefield{
 		this.minions = []
 	}
 
-	newMinion(player, minion){
+	newMinion(player, minion, data){
 		if (this.minions.length > 6)
 			throw new Error('Battlefield already full.')
-		this.minions.push(new Minion(player, minion))
+
+		const newMinion = new Minion(player, minion)
+
+		let interrupted = this.player.game.eventEmitter.emit('willPutNewMinion', {minion: minion, player: this.player})
+		if (interrupted)
+			return
+
+		// Inserting at the right position
+		let position
+		if (typeof data.position === 'undefined' || ![0,1,2,3,4,5,6].includes(data.position) || data.position > this.minions.length)
+			position = this.minions.length
+		else
+			position = data.position
+		this.minions.splice(position, 0, newMinion)
+
+		if (minion.interruptor){
+			minion.interruptor.card = minion
+			this.player.game.eventEmitter.addInterruptor(minion.interruptor)
+		}
+
+		data.minion = newMinion
+		if (minion.battlecry)
+			minion.battlecry(data)
+
+		this.player.game.eventEmitter.emit('putNewMinion', {minion: minion, player: this.player})
 	}
 
 	removeMinion(minion){

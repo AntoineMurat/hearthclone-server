@@ -1,4 +1,4 @@
 # Hearthclone Back-end
 NodeJS Hearthstone-like game engine.
 
-Should be accessed thanks to web-sockets.
+Should be accessed via web-sockets.

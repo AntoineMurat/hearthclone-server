@@ -13,6 +13,15 @@ class Library {
 		this.player.dealDamages(++this.dealtDamages)
 		return false
 	}
+
+	insertRandomly(card){
+		this.cards.push(card)
+		this.shuffle()
+	}
+
+	shuffle(){
+		this.cards = this.cards.sort(_ => Math.random()-0.5)
+	}
 }
 
 module.exports = Library

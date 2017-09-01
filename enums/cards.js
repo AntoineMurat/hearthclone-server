@@ -34,44 +34,24 @@ const Races = require('./races')
 //	}
 
 const Cards = {
-	TOKEN: {
-		id: 0,
-		cardName: 'Token',
-		cardType: CardTypes.MINION,
-		health: 1,
-		attack: 1,
-		cost: 1,
+	copy: card => Object.assign({}, card),
+	COIN: {
+		id: 'COIN',
+		cardName: 'Coin',
+		cardType: CardTypes.SPELL,
+		cost: 0,
 
-		battlecry: false,
-		charge: false,
-		chooseOne: false,
-		deathrattle: false,
-		divineShield: false,
-		enrage: false,
-		spellPower: 0,
-		silence: false,
-		stealth: false,
-		taunt: false,
-		windfury: false,
+		effect: data => (data.player.availableMana < 10) ? data.player.availableMana++ : false,
 
+		cardTextInPlay: 'Give a free mana for this turn.', flavorText: '~',
+		cardSet: CardSets.BASIC, rarity: Rarities.FREE,
+		
+		cardTextInHand: '+1 mana',
 
-
-
-
-
-		cardTextInPlay: 'Attaque seulement.',
-		flavorText: 'Minion de base',
-		cardSet: CardSets.BASIC,
-		rarity: Rarities.FREE,
-		cardTextInHand: 'Raccourci...',
-		race: Races.MURLOC,
-		faction: Factions.NEUTRAL,
-		artistName: 'n/a',
-		image: 'n/a',
-		goldImage: 'n/a'
+		artistName: 'n/a', image: 'n/a', goldImage: 'n/a'
 	},
 	HERO_POWER: {
-		id: 1,
+		id: 'HERO_POWER',
 		cardName: 'Hero Power',
 		cardType: CardTypes.HERO_POWER,
 		cost: 2,
@@ -80,10 +60,36 @@ const Cards = {
 		cardSet: CardSets.BASIC,
 		rarity: Rarities.FREE,
 		cardTextInHand: 'Exp. pyro',
-		effect: function(data){target.dealDamages(2)},
-		artistName: 'n/a',
-		image: 'n/a',
-		goldImage: 'n/a'
+		effect: data => data.target.dealDamages(2),
+		target: 'any',
+	},
+	TOKEN: {
+		id: 'TOKEN',
+		cardName: 'Token',
+		cardType: CardTypes.MINION,
+		health: 1,
+		attack: 1,
+		cost: 1,
+
+		battlecry: false, charge: true, chooseOne: false, // [id1, id2, ...]
+		deathrattle: false, divineShield: false, enrage: false,
+		spellPower: 0, silence: false, stealth: false, taunt: false,
+		windfury: true, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+
+		cardTextInPlay: 'Attaque seulement.',
+		flavorText: 'Minion de base',
+		cardSet: CardSets.BASIC,
+		rarity: Rarities.FREE,
+		cardTextInHand: 'Raccourci...',
+		race: Races.MURLOC,
+		faction: Factions.NEUTRAL,
+	},
+	WEAPON: {
+		id: 'WEAPON',
+		cardName: 'Dangerous Weapon',
+		cardType: CardTypes.WEAPON,
+		attack: 1,
+		durability: 1
 	}
 }
 

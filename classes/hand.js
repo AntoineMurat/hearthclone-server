@@ -6,14 +6,19 @@ class Hand{
 		this.cards = []
 	}
 
+	takeCard(card){
+		if (this.cards.length == 10)
+			return this.player.graveyard.add(card)
+		this.cards.push(card)
+	}
+
 	drawCard(){
+		this.player.game.eventEmitter.emit('willDraw', {player: this.player})
 		const drawnCard = this.player.library.pop()
 		if (drawnCard === false)
 			return
-		if (this.cards.length == 10)
-			return this.player.graveyard.add(drawnCard)
 		this.player.game.eventEmitter.emit('drew', {player: this.player, card: drawnCard})
-		this.cards.push(drawnCard)
+		this.takeCard(drawnCard)
 	}
 
 	drawCards(n){
@@ -25,9 +30,13 @@ class Hand{
 		if (typeof this.cards[index] === 'undefined')
 			throw new Error('Card not in hand.')
 		const cardToPlay = this.cards[index]
-		this.cards.splice(index, 1)
 
 		this.player.playCard(cardToPlay, data)
+		this.remove(cardToPlay)
+	}
+
+	remove(card){
+		this.cards.splice(this.cards.indexOf(card), 1)
 	}
 
 	status(){

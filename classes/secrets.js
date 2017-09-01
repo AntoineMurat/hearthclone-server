@@ -12,21 +12,12 @@ class Secrets {
 	add(secret){
 		this.secrets.push(secret)
 
-		const onEvent = data => {
+		secret.interruptor.card = secret
+		this.player.game.eventEmitter.addInterruptor(secret.interruptor)
+	}
 
-			if (!this.secret.secretConditions(data))
-				return
-		
-			const effect = secret.effect
-			this.player.act(effect, data)
-			this.player.graveyard.add(secret)
-
-			this.player.game.eventEmitter.removeListener(secret.secretEvent, onEvent)
-
-		}
-
-		this.player.game.eventEmitter.on(secret.secretEvent, onEvent)
-
+	remove(card){
+		this.secret.splice(this.secrets.indexOf(card), 1)
 	}
 
 	status(){
