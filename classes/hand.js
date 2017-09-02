@@ -26,6 +26,22 @@ class Hand{
 			this.drawCard()
 	}
 
+	mulligan(arrayOfIndexes){
+
+		arrayOfIndexes = arrayOfIndexes.sort().reverse()
+
+		if (arrayOfIndexes.length > this.cards.size || arrayOfIndexes.length !== new Set(arrayOfIndexes).size || arrayOfIndexes.some(index => ![0,1,2,3].includes(index)) || arrayOfIndexes.some(index => index >= this.cards.size))
+			throw new Error('Invalid mulligan')
+
+		arrayOfIndexes.forEach(index => {
+			const oldCard = this.cards[index]
+			this.player.library.insertRandomly(oldCard)
+			this.remove(oldCard)
+		})
+
+		this.drawCards(arrayOfIndexes.length)
+	}
+
 	playCardByIndex(index, data = {}){
 		if (typeof this.cards[index] === 'undefined')
 			throw new Error('Card not in hand.')

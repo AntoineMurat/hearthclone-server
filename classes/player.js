@@ -10,13 +10,45 @@ const CardTypes = require('./../enums/cardTypes')
 
 class Player {
 
-	constructor(game, client, deck = Array(20).fill(), playerClass = Classes.MAGE, startingHealth = 30, totalMana = 0){
+	constructor(game, client, deck = Array(30).fill(Cards.TOKEN), playerClass = Classes.MAGE, startingHealth = 30, totalMana = 0){
 
 		this.game = game
 		this.client = client
 		this.class = playerClass
 
-		deck = deck.map(e => Cards.copy(Cards.TOKEN)) 
+		// Mage base deck
+		deck = [
+			Cards.ARCANE_MISSILES,
+			Cards.ARCANE_MISSILES,
+			Cards.FROSTBOLT,
+			Cards.FROSTBOLT,
+			Cards.ARCANE_INTELLECT,
+			Cards.ARCANE_INTELLECT,
+			Cards.FIREBALL,
+			Cards.FIREBALL,
+			Cards.POLYMORPH,
+			Cards.POLYMORPH,
+			Cards.WATER_ELEMENTAL,
+			Cards.WATER_ELEMENTAL,
+			Cards.FLAMESTRIKE,
+			Cards.FLAMESTRIKE,
+			Cards.ACIDIC_SWAMP_OOZE,
+			Cards.ACIDIC_SWAMP_OOZE,
+			Cards.BLOODFEN_RAPTOR,
+			Cards.BLOODFEN_RAPTOR,
+			Cards.IRONFUR_GRIZZLY,
+			Cards.IRONFUR_GRIZZLY,
+			Cards.SHATTERED_SUN_CLERIC,
+			Cards.SHATTERED_SUN_CLERIC,
+			Cards.CHILLWIND_YETI,
+			Cards.CHILLWIND_YETI,
+			Cards.GNOMISH_INVENTOR,
+			Cards.GNOMISH_INVENTOR,
+			Cards.SENJIN_SHIELDMASTA,
+			Cards.SENJIN_SHIELDMASTA,
+			Cards.BOULDERFIST_OGRE,
+			Cards.BOULDERFIST_OGRE
+		]
 		this.deck = deck
 
 		this.battlefield = new Battlefield(this)
@@ -37,8 +69,9 @@ class Player {
 
 		this.weapon = null
 		this.weaponAlreadyUsed = false
-		this.heroPower = Object.assign({}, Cards.HERO_POWER)
+		this.heroPower = Cards.copy(Cards.FIREBLAST)
 		this.heroPowerAlreadyUsed = false
+		this.attacked = false
 
 		this.isHisTurn = false
 		this.hand.drawCards(3)
@@ -48,11 +81,11 @@ class Player {
 		this.game.eventEmitter.emit('newTurn', {player: this})
 
 		this.hand.drawCard()
-		this.weaponAlreadyUsed = this.heroPowerAlreadyUsed = false
+		this.weaponAlreadyUsed = this.heroPowerAlreadyUsed = this.attacked = false
 		this.totalMana = Math.min(this.totalMana+1, 10)
 		this.availableMana = this.totalMana - this.overload
 		this.overload = 0
-		this.immune = false
+		this.immune = this.attacked = false
 		this.battlefield.minions.forEach(minion => minion.reset())
 
 		this.isHisTurn = true
@@ -61,11 +94,21 @@ class Player {
 
 	endTurn(){
 
+		// Unfreeze if did not attack
+
+		this.battlefield.minions.forEach(minion => {
+			if (!minion.attacked)
+				minion.card.frozen = false
+		})
+
+		if (!this.attacked)
+			this.frozen = false
+
 		clearTimeout(this.automaticEndOfTurn)
-		this.battlefield.minions.forEach(minion => minion.card.frozen = Math.max(0, minion.card.frozen - 1))
 		this.isHisTurn = false
 		this.game.eventEmitter.emit('endOfTurn', {player: this})
-		this.game.opponentOf(this).newTurn()
+		if (this.health > 0 && this.opponent.health > 0)
+			this.opponent.newTurn()
 
 	}
 
@@ -95,9 +138,9 @@ class Player {
 					throw new Error('On should be either "hero" or "minion".')
 				let target = null
 				if (data.on === 'hero')
-					target = this.game.opponentOf(this)
+					target = this.opponent
 				else 
-					target = this.game.opponentOf(this).battlefield.getMinionByIndex(data.index)
+					target = this.opponent.battlefield.getMinionByIndex(data.index)
 				this.battlefield.getMinionByIndex(data.with).attack(target)
 				break
 			default:
@@ -106,7 +149,7 @@ class Player {
 	}
 
 	canBeAttacked(){
-		return !this.immune && !this.battlefield.minions.some(minion => minion.taunt)
+		return !this.immune && !this.battlefield.minions.some(minion => minion.card.taunt)
 	}
 
 	dealDamages(damages){
@@ -126,7 +169,7 @@ class Player {
 			return
 		if (this.health > 0)
 			return
-		this.game.won(this.game.opponentOf(this))
+		this.game.won(this.opponent)
 	}
 
 	heal(hp){
@@ -137,6 +180,14 @@ class Player {
 		this.health = min(this.startingHealth, this.health+hp)
 		if (this.health - this.oldHealth)
 			this.game.eventEmitter.emit('wasHealed', {target: this, hp: this.health - this.oldHealth})
+	}
+
+	freeze(){
+		let interrupted = this.player.game.eventEmitter.emit('willBeFrozen', {target: this})
+		if (interrupted)
+			return
+		this.frozen = true
+		this.player.game.eventEmitter.emit('wasFrozen', {target: this})
 	}
 
 	playCardByIndex(index, data = {}){
@@ -160,9 +211,9 @@ class Player {
 			throw new Error('On should be either "hero" or "minion".')
 		let target = null
 		if (data.on === 'hero')
-			target = this.game.opponentOf(this)
+			target = this.opponent
 		else 
-			target = this.game.opponentOf(this).battlefield.getMinionByIndex(data.index)
+			target = this.opponent.battlefield.getMinionByIndex(data.index)
 		if (!target.canBeAttacked)
 			throw new Error('The target can\'t be attacked.')
 		this.weaponAlreadyUsed = true
@@ -194,24 +245,41 @@ class Player {
 			
 		// TODO: Target could be a function and you check with card.target(target)
 		// Target translation from {enemy: true/false, hero: true/false, index: n} to Object
+		// If the card is a minion and no target was specified, it's ok if you didn't have choice.
 		if (card.target){
-			if (!data.target || typeof data.target.enemy === 'undefined' || typeof data.target.hero === 'undefined' || (!data.target.hero && typeof data.target.index === 'undefined'))
-				throw new Error('The played card expects a target.')
-			// Type of
-			if ((card.target === 'hero' || card.target === 'enemyHero' || card.target === 'friendlyHero') && data.target.hero === false)
-				throw new Error('The played card expects a hero target.')
-			if ((card.target === 'minion' || card.target === 'enemyMinion' || card.target === 'friendlyMinion') && data.target.hero === true)
-				throw new Error('The played card expects a minion target.')
-			// Enemy of
-			if ((card.target === 'enemyHero' || card.target === 'enemyMinion') && data.target.enemy === false)
-				throw new Error('The played card expects an enemy target.')
-			if ((card.target === 'friendlyMinion' || card.target === 'friendlyHero') && data.target.enemy === true)
-				throw new Error('The played card expects an friendly target.')
-			if (data.target.hero)
-				data.target = data.target.enemy ? this : this.game.opponentOf(this)
-			else {
-				const battlefield = data.target.enemy ? this.game.opponentOf(this).battlefield : this.battlefield
-				data.target = battlefield.getMinionByIndex(data.target.index)
+
+			if (card.type == CardTypes.MINION && !data.target && ((
+				card.target == 'minion' &&
+				!this.battlefield.minions.length && !this.opponent.battlefield.minions.length 
+				) || (
+				card.target == 'friendlyMinion' &&
+				!this.battlefield.minions.length
+				) || (
+				card.target == 'enemyMinion' &&
+				!this.opponent.battlefield.minions.length
+				))){
+				data.target = null
+			} else {
+				if (!data.target || typeof data.target.enemy === 'undefined' || typeof data.target.hero === 'undefined' || (!data.target.hero && typeof data.target.index === 'undefined'))
+					throw new Error('The played card expects a target.')
+				// Type of
+				if ((card.target === 'hero' || card.target === 'enemyHero' || card.target === 'friendlyHero') && data.target.hero === false)
+					throw new Error('The played card expects a hero target.')
+				if ((card.target === 'minion' || card.target === 'enemyMinion' || card.target === 'friendlyMinion') && data.target.hero === true)
+					throw new Error('The played card expects a minion target.')
+				// Enemy of
+				if ((card.target === 'enemyHero' || card.target === 'enemyMinion') && data.target.enemy === false)
+					throw new Error('The played card expects an enemy target.')
+				if ((card.target === 'friendlyMinion' || card.target === 'friendlyHero') && data.target.enemy === true)
+					throw new Error('The played card expects an friendly target.')
+				if (data.target.hero)
+					data.target = data.target.enemy ? this : this.opponent
+				else {
+					const battlefield = data.target.enemy ? this.opponent.battlefield : this.battlefield
+					data.target = battlefield.getMinionByIndex(data.target.index)
+				}
+				if (data.target.card && data.target.card.stealth)
+					throw new Error('Target invalid cause stealth.')
 			}
 		}
 
@@ -243,7 +311,7 @@ class Player {
 		let interrupted = this.game.eventEmitter.emit('willPlay', {player: this, card: minion})
 		if (interrupted)
 			return
-		this.battlefield.newMinion(this, minion, data)
+		this.battlefield.newMinion(this, minion, data, true)
 	}
 
 	playSpell(spell, data = {}){
@@ -291,6 +359,14 @@ class Player {
 
 	get id(){
 		return this.client.socket.id
+	}
+
+	get opponent(){
+		return this.game.opponentOf(this)
+	}
+
+	get spellPower(){
+		return this.battlefield.calculateSpellPower()
 	}
 
 	status(){

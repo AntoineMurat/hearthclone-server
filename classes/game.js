@@ -78,7 +78,7 @@ class Game {
 
 		this.loggers.push({
 			event: 'won',
-			callback: data => this.log(`${data.winner.id} won over ${this.opponentOf(data.winner).id}.`)
+			callback: data => this.log(`${data.winner.id} won over ${data.winner.opponent.id}.`)
 		})
 
 		this.loggers.push({

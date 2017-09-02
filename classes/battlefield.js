@@ -6,7 +6,7 @@ class Battlefield{
 		this.minions = []
 	}
 
-	newMinion(player, minion, data){
+	newMinion(player, minion, data, fromHand = false){
 		if (this.minions.length > 6)
 			throw new Error('Battlefield already full.')
 
@@ -30,7 +30,7 @@ class Battlefield{
 		}
 
 		data.minion = newMinion
-		if (minion.battlecry)
+		if (minion.battlecry && fromHand)
 			minion.battlecry(data)
 
 		this.player.game.eventEmitter.emit('putNewMinion', {minion: minion, player: this.player})
@@ -44,8 +44,8 @@ class Battlefield{
 		this.minions.forEach(minion => minion.destory())
 	}
 
-	get spellPower(){
-		this.minions.reduce(
+	calculateSpellPower(){
+		return this.minions.reduce(
 			(sum, minion) => sum + (minion.card.spellPower ? minion.card.spellPower : 0), 0)
 	}
 

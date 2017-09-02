@@ -1,7 +1,10 @@
+const Cards = require('./../enums/cards')
+
 class Library {
 	constructor(player, deck){
 		this.player = player
-		this.cards = deck
+		this.cards = deck.map(card => Cards.copy(card))
+		this.shuffle()
 
 		this.dealtDamages = 0
 	}

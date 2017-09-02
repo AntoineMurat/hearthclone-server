@@ -10,11 +10,26 @@ class Minion {
 		if (this.card.charge)
 			this.reset()
 		this.card.totalHealth = this.health
-		this.card.frozen = 0
+		this.card.frozen = false
 	}
 
 	reset(){
 		this.canAttack = this.card.windfury ? 2 : 1
+		this.attacked = false
+	}
+
+	give(attack, health){
+		this.card.setAttack(this.card.attack + attack)
+		this.card.setHealth(this.card.health + health)
+	}
+
+	setAttack(attack){
+		this.card.attack = attack
+	}
+
+	setHealth(health){
+		this.card.health += health
+		this.card.totalHealth = Math.max(this.card.totalHealth, this.card.health)
 	}
 
 	silence(silencer){
@@ -26,9 +41,9 @@ class Minion {
 		this.card.stealth = this.card.divineShield = this.card.battlecry = 
 		this.card.charge = this.card.chooseOne = this.card.deathrattle = 
 		this.card.enrage = this.card.spellPower = this.card.stealth = 
-		this.card.taunt = this.card.windfury = this.card.freeze = false
+		this.card.taunt = this.card.windfury = this.card.freeze = this.card.frozen = false
 		this.card.silence = true
-		this.card.frozen = 0
+		this.canAttack = 0
 		this.card.attack = originalCard.attack
 		if (this.card.totalHealth != originalCard.totalHealth)
 			this.card.totalHealth = this.originalCard.totalHealth
@@ -38,7 +53,7 @@ class Minion {
 	}
 
 	canBeAttacked(){
-		return !this.card.stealth && !this.card.immune && (this.card.taunt || !this.player.battlefield.minions.some(minion => minion.taunt))
+		return !this.card.stealth && !this.card.immune && (this.card.taunt || !this.player.battlefield.minions.some(minion => minion.card.taunt))
 	}
 
 	heal(hp){
@@ -88,22 +103,23 @@ class Minion {
 			throw new Error('Can\'t attack when frozen.')
 		if (!target.canBeAttacked())
 			throw new Error('Target can\'t be attacked.')
+		this.canAttack--
+		this.attacked = true
 		let interrupted = this.player.game.eventEmitter.emit('willAttack', {target: target, damages: this.card.attack, attacker: this})
 		if (interrupted)
 			return
 		target.dealDamages(this.card.attack)
 		if (this.card.freeze)
-			target.frozen = 1
+			target.freeze()
 		if (this.card.poisonous && target instanceof Minion)
 			target.destroy()
 		if (target instanceof Minion){
 			this.dealDamages(target.card.attack)
 			if (target.card.freeze)
-				this.card.frozen = 2
+				this.freeze()
 			if (target.card.poisonous)
 				this.card.destroy()
 		}
-		this.canAttack--
 		this.player.game.eventEmitter.emit('attacked', {target: target, attacker: this, damages: this.card.attack})
 	}
 
@@ -119,6 +135,14 @@ class Minion {
 		this.player.game.eventEmitter.removeInterruptorByCard(this.card)
 		this.player.graveyard.add(this)
 		this.player.game.eventEmitter.emit('wasDestroyed', {minion: this})
+	}
+
+	freeze(){
+		let interrupted = this.player.game.eventEmitter.emit('willBeFrozen', {target: this})
+		if (interrupted)
+			return
+		this.card.frozen = true
+		this.player.game.eventEmitter.emit('wasFrozen', {target: this})
 	}
 
 	sendBackToHand(){
@@ -146,6 +170,14 @@ class Minion {
 
 	get id(){
 		return this.card.cardName
+	}
+
+	get position(){
+		this.player.battlefield.minions.forEach(minion, index => {
+			if (minion == this)
+				return index
+		})
+		return -1
 	}
 
 	status(){
