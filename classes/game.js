@@ -121,7 +121,8 @@ class Game {
 			event: 'wasDealtDamages',
 			callback: data => {
 				this.log(`${data.target.id} was dealt ${data.damages} damages.`)
-				data.target.notify('wasDealtDamages', {damages: data.damages})
+				this.player1.notify('wasDealtDamages', {target: data.target.id, damages: data.damages})
+				this.player2.notify('wasDealtDamages', {target: data.target.id, damages: data.damages})
 			}
 		})
 

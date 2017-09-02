@@ -76,8 +76,8 @@ const Cards = {
 		cardType: CardTypes.SPELL,
 		cost: 1,
 		effect: data => {
-			data.target.dealDamages(3+spellPower)
-			data.target.card.freeze()
+			data.target.dealDamages(3+data.player.spellPower)
+			data.target.freeze()
 		},
 		target: 'any'
 	},
@@ -104,14 +104,9 @@ const Cards = {
 		id: 'SHEEP',
 		cardName: 'Sheep',
 		cardType: CardTypes.MINION,
-		health: 1,
-		attack: 1,
 		cost: 1,
-
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		attack: 1,
+		health: 1,
 	},
 	POLYMORPH: {
 		id: 'POLYMORPH',
@@ -127,14 +122,11 @@ const Cards = {
 		id: 'WATER_ELEMENTAL',
 		cardName: 'Water Elemental',
 		cardType: CardTypes.MINION,
-		health: 6,
-		attack: 3,
 		cost: 3,
+		attack: 3,
+		health: 6,
 
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: true, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		freeze: true
 	},
 	FLAMESTRIKE: {
 		id: 'FLAMESTRIKE',
@@ -142,7 +134,9 @@ const Cards = {
 		cardType: CardTypes.SPELL,
 		cost: 7,
 		effect: data => {
-			data.player.opponent.battlefield.minions.forEach(
+			// foreEach can't iterate over an array while destoying it, we use a copy.
+			let enemyMinions = data.player.opponent.battlefield.minions.slice()
+			enemyMinions.forEach(
 				minion => minion.dealDamages(4+data.player.spellPower)
 			)
 		}
@@ -151,28 +145,19 @@ const Cards = {
 		id: 'ACIDIC_SWAMP_OOZE',
 		cardName: 'Acidic Swamp Ooze',
 		cardType: CardTypes.MINION,
-		health: 2,
-		attack: 3,
 		cost: 2,
+		attack: 3,
+		health: 2,
 
 		battlecry: data => data.player.opponent.Weapon = null, 
-		charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
 	},
 	BLOODFEN_RAPTOR: {
 		id: 'BLOODFEN_RAPTOR',
 		cardName: 'Bloodfen Raptor',
 		cardType: CardTypes.MINION,
-		health: 2,
-		attack: 3,
 		cost: 2,
-
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		attack: 3,
+		health: 2,
 	},
 	IRONFUR_GRIZZLY: {
 		id: 'IRONFUR_GRIZZLY',
@@ -182,25 +167,17 @@ const Cards = {
 		attack: 3,
 		cost: 3,
 
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: true,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		taunt: true
 	},
 	SHATTERED_SUN_CLERIC: {
 		id: 'SHATTERED_SUN_CLERIC',
 		cardName: 'Shattered Sun Cleric',
 		cardType: CardTypes.MINION,
-		health: 2,
-		attack: 3,
 		cost: 3,
+		attack: 3,
+		health: 2,
 
 		battlecry: data => {if (data.target) data.target.give(1,1)}, 
-
-		charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, 
 
 		target: 'friendlyMinion', // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
 	},
@@ -208,60 +185,43 @@ const Cards = {
 		id: 'CHILLWIND_YETI',
 		cardName: 'Chillwind Yeti',
 		cardType: CardTypes.MINION,
-		health: 5,
-		attack: 4,
 		cost: 4,
-
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		attack: 4,
+		health: 5,
 	},
 	GNOMISH_INVENTOR: {
 		id: 'GNOMISH_INVENTOR',
 		cardName: 'Gnomish Inventor',
 		cardType: CardTypes.MINION,
-		health: 4,
-		attack: 2,
 		cost: 4,
+		attack: 2,
+		health: 4,
 
 		battlecry: data => data.player.hand.drawCard(), 
-
-		charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
 	},
 	SENJIN_SHIELDMASTA: {
 		id: 'SENJIN_SHIELDMASTA',
 		cardName: 'Sen\'jin Shieldmasta',
 		cardType: CardTypes.MINION,
-		health: 5,
-		attack: 3,
 		cost: 4,
+		attack: 3,
+		health: 5,
 
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: true,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		taunt: true
 	},
 	BOULDERFIST_OGRE: {
 		id: 'BOULDERFIST_OGRE',
 		cardName: 'Boulderfist Ogre',
 		cardType: CardTypes.MINION,
-		health: 7,
-		attack: 6,
 		cost: 6,
-
-		battlecry: false, charge: false, chooseOne: false, // [id1, id2, ...]
-		deathrattle: false, divineShield: false, enrage: false,
-		spellPower: 0, silence: false, stealth: false, taunt: false,
-		windfury: false, freeze: false, poisonous: false, target: false, // 'any', 'hero', 'minion', 'enemyHero', 'enemyMinion', 'firendlyHero', 'friendlyMinion'
+		attack: 6,
+		health: 7,
 	},
 	WEAPON: {
 		id: 'WEAPON',
 		cardName: 'Dangerous Weapon',
 		cardType: CardTypes.WEAPON,
+		cost: 1,
 		attack: 1,
 		durability: 1
 	}

@@ -20,7 +20,7 @@ return new(e[["Active"].concat("Object").join("X")])("Microsoft.XMLHTTP")}catch(
 					console.log(`Got ${data.card}`)
 					break
 				case 'wasDealtDamages':
-					console.log(`Was dealt ${data.damages} damages.`)
+					console.log(`${data.target} was dealt ${data.damages} damages.`)
 					break
 				default :
 					console.error('Unknown action.')

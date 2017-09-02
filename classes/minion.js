@@ -9,7 +9,7 @@ class Minion {
 		this.canAttack = 0
 		if (this.card.charge)
 			this.reset()
-		this.card.totalHealth = this.health
+		this.card.totalHealth = this.card.health
 		this.card.frozen = false
 	}
 
@@ -28,7 +28,7 @@ class Minion {
 	}
 
 	setHealth(health){
-		this.card.health += health
+		this.card.health = health
 		this.card.totalHealth = Math.max(this.card.totalHealth, this.card.health)
 		if (!this.card.health)
 			this.destroy()
@@ -82,11 +82,11 @@ class Minion {
 			return
 		if (this.card.divineShield)
 			return this.card.divineShield = false
-		this.health -= damages
+		this.card.health -= damages
 		interrupted = this.player.game.eventEmitter.emit('wasDealtDamages', {target: this, damages: damages})
 		if (interrupted)
 			return
-		if (this.health > 0){
+		if (this.card.health > 0){
 
 			// Enrage
 
@@ -174,7 +174,7 @@ class Minion {
 	}
 
 	get position(){
-		this.player.battlefield.minions.forEach(minion, index => {
+		this.player.battlefield.minions.forEach((minion, index) => {
 			if (minion == this)
 				return index
 		})
