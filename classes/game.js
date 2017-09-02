@@ -46,6 +46,7 @@ class Game {
 		this.player1.client.socket.on('play', this.player1Listener)
 		this.player2.client.socket.on('play', this.player2Listener)
 
+		this.player2.hand.drawCard()
 		this.player2.hand.takeCard(Cards.copy(Cards.COIN))
 
 		this.eventEmitter.emit('started')
@@ -118,7 +119,10 @@ class Game {
 
 		this.loggers.push({
 			event: 'wasDealtDamages',
-			callback: data => this.log(`${data.target.id} was dealt ${data.damages} damages.`)
+			callback: data => {
+				this.log(`${data.target.id} was dealt ${data.damages} damages.`)
+				data.target.notify('wasDealtDamages', {damages: data.damages})
+			}
 		})
 
 		this.loggers.push({
@@ -138,7 +142,22 @@ class Game {
 
 		this.loggers.push({
 			event: 'drew',
-			callback: data => this.log(`${data.player.id} drew ${data.card.cardName}.`)
+			callback: data => {
+				this.log(`${data.player.id} drew ${data.card.cardName}.`)
+
+				/* Should we keep a timer/something to sync ? */
+				// data.player.notify('drew', {card: data.card.id})
+			}
+		})
+
+		this.loggers.push({
+			event: 'wasAddedCardToHand',
+			callback: data => {
+				this.log(`${data.player.id} got ${data.card.cardName}.`)
+
+				/* Should we keep a timer/something to sync ? */
+				data.player.notify('wasAddedCardToHand', {card: data.card.id})
+			}
 		})
 
 		this.loggers.push({

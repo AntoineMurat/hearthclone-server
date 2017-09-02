@@ -77,6 +77,29 @@ class Player {
 		this.hand.drawCards(3)
 	}
 
+	/* getters */
+
+	get id(){
+		return this.client.socket.id
+	}
+
+	get opponent(){
+		return this.game.opponentOf(this)
+	}
+
+	get spellPower(){
+		return this.battlefield.calculateSpellPower()
+	}
+
+	/* to client */
+
+	notify(action, data){
+		data.action = action
+		this.client.socket.emit('notification', data)
+	}
+
+	/* hooks */
+
 	newTurn(){
 		this.game.eventEmitter.emit('newTurn', {player: this})
 
@@ -112,6 +135,8 @@ class Player {
 
 	}
 
+	/* Play action */
+
 	play(data){
 		if (!this.isHisTurn)
 			throw new Error('Not your turn.')
@@ -146,48 +171,6 @@ class Player {
 			default:
 				throw new Error('Unknow action.')
 		}
-	}
-
-	canBeAttacked(){
-		return !this.immune && !this.battlefield.minions.some(minion => minion.card.taunt)
-	}
-
-	dealDamages(damages){
-		if (this.immune)
-			throw new Error('Target is immune')
-		let interrupted = this.game.eventEmitter.emit('willBeDealtDamages', {target: this, damages: damages})
-		if (interrupted)
-			return
-		this.shield -= damages
-		if (this.shield > 0)
-			return
-		damages = -this.shield
-		this.shield = 0
-		this.health -= damages
-		interrupted = this.game.eventEmitter.emit('wasDealtDamages', {target: this, damages: damages})
-		if (interrupted)
-			return
-		if (this.health > 0)
-			return
-		this.game.won(this.opponent)
-	}
-
-	heal(hp){
-		let interrupted = this.game.eventEmitter.emit('willBeHealed', {target: this})
-		if (interrupted)
-			return
-		const oldHealth = this.health
-		this.health = min(this.startingHealth, this.health+hp)
-		if (this.health - this.oldHealth)
-			this.game.eventEmitter.emit('wasHealed', {target: this, hp: this.health - this.oldHealth})
-	}
-
-	freeze(){
-		let interrupted = this.player.game.eventEmitter.emit('willBeFrozen', {target: this})
-		if (interrupted)
-			return
-		this.frozen = true
-		this.player.game.eventEmitter.emit('wasFrozen', {target: this})
 	}
 
 	playCardByIndex(index, data = {}){
@@ -273,7 +256,7 @@ class Player {
 				if ((card.target === 'friendlyMinion' || card.target === 'friendlyHero') && data.target.enemy === true)
 					throw new Error('The played card expects an friendly target.')
 				if (data.target.hero)
-					data.target = data.target.enemy ? this : this.opponent
+					data.target = data.target.enemy ? this.opponent : this
 				else {
 					const battlefield = data.target.enemy ? this.opponent.battlefield : this.battlefield
 					data.target = battlefield.getMinionByIndex(data.target.index)
@@ -357,17 +340,51 @@ class Player {
 		heroPower.effect(data)
 	}
 
-	get id(){
-		return this.client.socket.id
+	/* Character */
+
+		canBeAttacked(){
+		return !this.immune && !this.battlefield.minions.some(minion => minion.card.taunt)
 	}
 
-	get opponent(){
-		return this.game.opponentOf(this)
+	dealDamages(damages){
+		if (this.immune)
+			throw new Error('Target is immune')
+		let interrupted = this.game.eventEmitter.emit('willBeDealtDamages', {target: this, damages: damages})
+		if (interrupted)
+			return
+		this.shield -= damages
+		if (this.shield > 0)
+			return
+		damages = -this.shield
+		this.shield = 0
+		this.health -= damages
+		interrupted = this.game.eventEmitter.emit('wasDealtDamages', {target: this, damages: damages})
+		if (interrupted)
+			return
+		if (this.health > 0)
+			return
+		this.game.won(this.opponent)
 	}
 
-	get spellPower(){
-		return this.battlefield.calculateSpellPower()
+	heal(hp){
+		let interrupted = this.game.eventEmitter.emit('willBeHealed', {target: this})
+		if (interrupted)
+			return
+		const oldHealth = this.health
+		this.health = min(this.startingHealth, this.health+hp)
+		if (this.health - this.oldHealth)
+			this.game.eventEmitter.emit('wasHealed', {target: this, hp: this.health - this.oldHealth})
 	}
+
+	freeze(){
+		let interrupted = this.player.game.eventEmitter.emit('willBeFrozen', {target: this})
+		if (interrupted)
+			return
+		this.frozen = true
+		this.player.game.eventEmitter.emit('wasFrozen', {target: this})
+	}
+
+	/* logs */
 
 	status(){
 		return `// ${this.id} - ${this.health}/${this.startingHealth} (+${this.shield} Shield) //\n`+

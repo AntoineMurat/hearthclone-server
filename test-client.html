@@ -11,32 +11,43 @@ return new(e[["Active"].concat("Object").join("X")])("Microsoft.XMLHTTP")}catch(
 
 	<script>
 		const socket = io('http://localhost:3000')
-		socket.on('connect', _ => console.log('Connected'))
+		socket.on('connect', _ => {
+			console.log('Connected')
+		})
+		socket.on('notification', data => {
+			switch (data.action){
+				case 'wasAddedCardToHand':
+					console.log(`Got ${data.card}`)
+					break
+				case 'wasDealtDamages':
+					console.log(`Was dealt ${data.damages} damages.`)
+					break
+				default :
+					console.error('Unknown action.')
+			}
+		})
+
+		const actionCallback = data => console.log(data.success ? 'Success.' : data.error)
+
+		const playCard = index => socket.emit('play', {action: 'playCard', index: index}, actionCallback)
+		const attackMinion = (withMinion, index) => socket.emit('play', {action: 'attackWithMinion', on: 'minion', index: index, with: withMinion}, actionCallback)
+		const attackHero = withMinion => socket.emit('play', {action: 'attackWithMinion', on: 'hero', with: withMinion}, actionCallback)
+		const endTurn = _ => socket.emit('play', {action: 'endTurn'}, data => console.log(data.success ? 'Success.' : data.error))
+
 	</script>
 
 	<button id="watch">Watch</button><br>
-	<button id="playCard">Play card</button><br>
-	<button id="attackMinion">Attack Minion</button><br>
-	<button id="attackHero">Attack Hero</button><br>
-	<button id="endTurn">End Turn</button>
+	<button id="playCard">Play card</button> playCard(index = 0)<br>
+	<button id="attackMinion">Attack Minion</button> attackMinion(withMinion = 0, index = 0)<br>
+	<button id="attackHero">Attack Hero</button> attackHero(withMinion = 0)<br>
+	<button id="endTurn">End Turn</button> endTurn()
 
 	<script>
-		document.getElementById('watch').addEventListener('click', _ => {
-			socket.emit('watch')
-		})
-		document.getElementById('playCard').addEventListener('click', _ => {
-			socket.emit('play', {action: 'playCard', index: 0}, data => console.log(data.success ? 'Success.' : data.error))
-		})
-		document.getElementById('attackMinion').addEventListener('click', _ => {
-			socket.emit('play', {action: 'attackWithMinion', on: 'minion', index: 0, with: 0}, data => console.log(data.success ? 'Success.' : data.error))
-		})
-		document.getElementById('attackHero').addEventListener('click', _ => {
-			socket.emit('play', {action: 'attackWithMinion', on: 'hero', with: 0},
-				data => console.log(data.success ? 'Success.' : data.error))
-		})
-		document.getElementById('endTurn').addEventListener('click', _ => {
-			socket.emit('play', {action: 'endTurn'}, data => console.log(data.success ? 'Success.' : data.error))
-		})
+		document.getElementById('watch').addEventListener('click', _ => socket.emit('watch'))
+		document.getElementById('playCard').addEventListener('click', _ => playCard(0))
+		document.getElementById('attackMinion').addEventListener('click', _ => attackMinion(0,0))
+		document.getElementById('attackHero').addEventListener('click', _ => attackHero(0))
+		document.getElementById('endTurn').addEventListener('click', _ => endTurn())
 	</script>
 </body>
 </html>

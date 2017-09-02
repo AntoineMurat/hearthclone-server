@@ -10,6 +10,7 @@ class Hand{
 		if (this.cards.length == 10)
 			return this.player.graveyard.add(card)
 		this.cards.push(card)
+		this.player.game.eventEmitter.emit('wasAddedCardToHand', {player: this.player, card: card})
 	}
 
 	drawCard(){
