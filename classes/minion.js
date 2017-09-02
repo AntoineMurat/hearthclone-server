@@ -30,13 +30,15 @@ class Minion {
 	setHealth(health){
 		this.card.health += health
 		this.card.totalHealth = Math.max(this.card.totalHealth, this.card.health)
+		if (!this.card.health)
+			this.destroy()
 	}
 
 	silence(silencer){
 		let interrupted = this.player.game.eventEmitter.emit('willBeSilenced', {minion: this})
 		if (interrupted)
 			return
-		const originalCard = cards.find(e => e.id == this.card.id)[0]
+		const originalCard = cards.find(e => e.id == this.card.id)
 		this.enchantments.push(silencer)
 		this.card.stealth = this.card.divineShield = this.card.battlecry = 
 		this.card.charge = this.card.chooseOne = this.card.deathrattle = 
@@ -45,8 +47,7 @@ class Minion {
 		this.card.silence = true
 		this.canAttack = 0
 		this.card.attack = originalCard.attack
-		if (this.card.totalHealth != originalCard.totalHealth)
-			this.card.totalHealth = this.originalCard.totalHealth
+		this.card.totalHealth = originalCard.totalHealth
 		this.card.health = Math.min(this.card.health, this.originalCard.totalHealth)
 		this.player.game.eventEmitter.removeInterruptorByCard(this.card)
 		this.player.game.eventEmitter.emit('wasSilenced', {minion: this})
